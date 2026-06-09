@@ -6,6 +6,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.text());
 
+// ── Config ──────────────────────────────────────────────────────────────────
+const NTFY_TOPIC = process.env.NTFY_TOPIC || 'hayden-bridge-123'; // change this!
+
 // In-memory store: { [session]: [{ text, ts }] }
 const replyStore = {};
 
@@ -16,7 +19,17 @@ app.post('/messages/:session', (req, res) => {
   const { session } = req.params;
   const text = req.body?.text || req.body || '';
   console.log(`[→ from web] session=${session} text="${text}"`);
-  // Just acknowledge — Pipedream will handle the ntfy notification
+
+  // Send ntfy notification to your phone
+  fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+    method: 'POST',
+    headers: {
+      'Title':   'Shortcut Bridge',
+      'Content-Type': 'text/plain'
+    },
+    body: `${text}\n\nSession: ${session}`
+  }).catch(err => console.error('ntfy error:', err));
+
   res.json({ ok: true, session, text });
 });
 
